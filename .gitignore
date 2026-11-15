@@ -1,0 +1,4 @@
+.donnees-locales.json
+node_modules
+.vercel
+.env*

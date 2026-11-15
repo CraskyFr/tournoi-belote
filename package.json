@@ -1,0 +1,8 @@
+{
+  "name": "tournoi-belote",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tournoi de belote : appariement suisse et saisie des scores par QR code",
+  "scripts": { "dev": "node dev.js" },
+  "engines": { "node": ">=20" }
+}

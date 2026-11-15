@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tournoi de belote</title>
+<style>
+/* Idée de mise en page : une feuille de marque posée sur un tapis de jeu. Colonne unique, gros chiffres, lisible debout dans une salle. */
+:root {
+  color-scheme: light;
+  --tapis: #1d5c43;
+  --tapis-fonce: #123d2d;
+  --feuille: #fbfaf5;
+  --trait: #d9d5c7;
+  --encre: #1c2420;
+  --discret: #5d6861;
+  --rouge: #b3261e;
+  --or: #b88a1b;
+  --titre: Georgia, "Times New Roman", serif;
+  --texte: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--tapis); color: var(--encre); font: 16px/1.45 var(--texte); }
+header { color: #fff; padding: 18px 16px 12px; max-width: 760px; margin: 0 auto; }
+header h1 { font: 700 26px/1.15 var(--titre); margin: 0; text-wrap: balance; }
+header p { margin: 4px 0 0; opacity: .85; font-size: 14px; }
+.couleurs { letter-spacing: 4px; font-size: 14px; opacity: .8; }
+.couleurs b { color: #ff9d94; font-weight: 400; }
+nav { display: flex; gap: 6px; max-width: 760px; margin: 0 auto; padding: 0 16px; }
+nav a { flex: 1; text-align: center; padding: 10px 6px; border-radius: 10px 10px 0 0; color: #fff; text-decoration: none; background: var(--tapis-fonce); font-weight: 600; font-size: 15px; }
+nav a.ici { background: var(--feuille); color: var(--tapis-fonce); }
+main { background: var(--feuille); max-width: 760px; margin: 0 auto; padding: 18px 16px 40px; min-height: 70vh; }
+@media (min-width: 792px) { main { border-radius: 0 0 14px 14px; margin-bottom: 24px; } }
+h2 { font: 700 21px/1.2 var(--titre); margin: 0 0 12px; }
+h3 { font: 700 17px/1.2 var(--titre); margin: 26px 0 10px; padding-top: 16px; border-top: 1px solid var(--trait); }
+p { margin: 0 0 12px; }
+.discret { color: var(--discret); font-size: 14px; }
+.num { font-variant-numeric: tabular-nums; }
+button, .bouton { font: 600 16px var(--texte); border: 0; border-radius: 10px; padding: 12px 16px; background: var(--tapis); color: #fff; cursor: pointer; text-decoration: none; display: inline-block; }
+button.second, .bouton.second { background: #fff; color: var(--tapis-fonce); border: 1.5px solid var(--tapis); }
+button.danger { background: #fff; color: var(--rouge); border: 1.5px solid var(--rouge); }
+button.petit { padding: 6px 10px; font-size: 14px; }
+button:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+input, textarea, select { font: 16px var(--texte); padding: 10px 12px; border: 1.5px solid var(--trait); border-radius: 10px; background: #fff; color: var(--encre); width: 100%; }
+label { display: block; font-weight: 600; margin-bottom: 6px; }
+.rangee { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.pile { display: flex; flex-direction: column; gap: 12px; }
+.message { padding: 10px 12px; border-radius: 10px; background: #fdecea; color: var(--rouge); font-weight: 600; }
+.message.ok { background: #e4f1ea; color: var(--tapis-fonce); }
+
+table { width: 100%; border-collapse: collapse; }
+th { text-align: right; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--discret); padding: 6px 6px; border-bottom: 2px solid var(--encre); }
+th:nth-child(2) { text-align: left; }
+td { padding: 9px 6px; border-bottom: 1px solid var(--trait); text-align: right; }
+td:nth-child(2) { text-align: left; }
+td.rang { text-align: center; font: 700 17px var(--titre); width: 34px; }
+tr.podium td.rang { color: var(--or); }
+tr.retire td { color: var(--discret); text-decoration: line-through; }
+td.fort { font-weight: 700; }
+.no { color: var(--discret); font-size: 13px; }
+.defile { overflow-x: auto; }
+
+.partie { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--trait); color: inherit; text-decoration: none; }
+.partie .t { font: 700 20px var(--titre); text-align: center; color: var(--tapis); }
+.partie .t small { display: block; font: 600 10px var(--texte); text-transform: uppercase; color: var(--discret); letter-spacing: .05em; }
+.partie .eq div { overflow-wrap: anywhere; }
+.partie .gagne { font-weight: 700; }
+.pastille { font-size: 13px; font-weight: 600; padding: 4px 9px; border-radius: 99px; background: #f4e7c4; color: #6b4e06; white-space: nowrap; }
+.pastille.fait { background: #e4f1ea; color: var(--tapis-fonce); font-size: 16px; }
+
+.saisie { border: 2px solid var(--tapis); border-radius: 14px; padding: 16px; background: #fff; }
+.saisie .camp { display: grid; grid-template-columns: 1fr 120px; gap: 12px; align-items: center; padding: 10px 0; }
+.saisie .camp + .camp { border-top: 1px dashed var(--trait); }
+.saisie .camp label { margin: 0; overflow-wrap: anywhere; }
+.saisie input { font: 700 26px var(--titre); text-align: center; padding: 10px 6px; }
+.saisie button { width: 100%; margin-top: 14px; font-size: 18px; padding: 14px; }
+.grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.grille a { text-align: center; padding: 14px 0; border-radius: 10px; background: #fff; border: 1.5px solid var(--tapis); color: var(--tapis-fonce); font: 700 18px var(--titre); text-decoration: none; }
+.grille a.fait { background: #e4f1ea; border-color: var(--trait); }
+.equipe { display: grid; grid-template-columns: 40px 1fr auto; gap: 8px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--trait); }
+.equipe.retire span { color: var(--discret); text-decoration: line-through; }
+
+.qrs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.qr { border: 1.5px solid var(--encre); border-radius: 10px; padding: 10px; text-align: center; background: #fff; break-inside: avoid; }
+.qr svg { width: 100%; height: auto; display: block; }
+.qr strong { font: 700 20px var(--titre); display: block; }
+.qr span { font-size: 11px; color: var(--discret); overflow-wrap: anywhere; }
+@media print {
+  body { background: #fff; }
+  header, nav, .pas-imprimer { display: none !important; }
+  main { padding: 0; max-width: none; }
+  .qrs { grid-template-columns: repeat(3, 1fr); gap: 8mm; }
+  .qr strong { font-size: 26px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="couleurs" aria-hidden="true">♠ <b>♥</b> ♣ <b>♦</b></div>
+  <h1 id="titre">Tournoi de belote</h1>
+  <p id="sous-titre">Chargement…</p>
+</header>
+<nav id="nav">
+  <a href="#classement">Classement</a>
+  <a href="#manche">Parties</a>
+  <a href="#table">Ma table</a>
+  <a href="#admin">Organisateur</a>
+</nav>
+<main id="vue"><p class="discret">Chargement du tournoi…</p></main>
+
+<script src="qrcode.js"></script>
+<script>
+"use strict";
+var E = null;                 // état reçu du serveur : { config, scores, classement }
+var erreurReseau = "";
+var mancheVue = 0;            // manche affichée dans « Parties » (0 = la dernière)
+var flash = null;             // message à afficher une fois { texte, ok }
+var code = "";
+try { code = localStorage.getItem("belote_code") || ""; } catch (e) {}
+var admin = false;
+
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function $(id) { return document.getElementById(id); }
+function equipe(id) { var e = E.config.equipes.find(function (x) { return x.id === id; }); return e || { id: id, nom: "?" }; }
+function nomEq(id) { var e = equipe(id); return '<span class="no num">n° ' + e.id + '</span> ' + esc(e.nom); }
+function derniere() { return E.config.manches[E.config.manches.length - 1] || null; }
+function score(n, t) { return E.scores[n + ":" + t] || null; }
+
+async function appel(chemin, corps) {
+  var opt = { headers: {} };
+  if (corps) { opt.method = "POST"; opt.headers["Content-Type"] = "application/json"; opt.body = JSON.stringify(corps); }
+  if (code) opt.headers["x-admin-code"] = code;
+  var r = await fetch(chemin, opt);
+  var j = null;
+  try { j = await r.json(); } catch (e) {}
+  if (!r.ok) throw new Error((j && j.erreur) || "Le serveur ne répond pas (" + r.status + ").");
+  return j;
+}
+
+async function charger(frais) {
+  try {
+    E = await appel("/api/state" + (frais ? "?frais=" + Date.now() : ""));
+    erreurReseau = "";
+  } catch (e) { erreurReseau = e.message; }
+  rendre();
+}
+
+async function action(corps) {
+  try { E = await appel("/api/admin", corps); return true; }
+  catch (e) { flash = { texte: e.message }; rendre(); return false; }
+}
+
+/* ---------- Vues ---------- */
+
+function vueClassement() {
+  var c = E.classement;
+  if (!c.length) return '<h2>Classement</h2><p class="discret">Aucune équipe inscrite pour le moment.</p>';
+  var h = '<h2>Classement général</h2><p class="discret">' + (E.config.mode === "victoires" ? "Victoires d’abord, puis total des points." : "Total des points d’abord, puis victoires.") +
+    ' Mise à jour automatique.</p><div class="defile"><table><thead><tr><th>#</th><th>Équipe</th><th>Points</th><th>V</th><th>D</th><th>+/−</th></tr></thead><tbody>';
+  var joue = E.config.manches.length > 0;
+  c.forEach(function (s) {
+    h += '<tr class="' + (joue && s.rang <= 3 ? "podium " : "") + (s.actif ? "" : "retire") + '"><td class="rang num">' + s.rang + '</td><td>' + nomEq(s.id) +
+      '</td><td class="num fort">' + s.pour + '</td><td class="num">' + s.v + (s.n ? " <span class=no>+" + s.n + " nul</span>" : "") + '</td><td class="num">' + s.d +
+      '</td><td class="num">' + (s.diff > 0 ? "+" : "") + s.diff + '</td></tr>';
+  });
+  return h + '</tbody></table></div>';
+}
+
+function lignePartie(m, t, lien) {
+  var sc = score(m.n, t.t);
+  var ga = sc && sc.a > sc.b, gb = sc && sc.b > sc.a;
+  return '<a class="partie" href="' + lien + '"><div class="t num"><small>Table</small>' + t.t + '</div><div class="eq"><div class="' + (ga ? "gagne" : "") + '">' + nomEq(t.a) +
+    '</div><div class="' + (gb ? "gagne" : "") + '">' + nomEq(t.b) + '</div></div>' +
+    (sc ? '<span class="pastille fait num">' + sc.a + ' – ' + sc.b + '</span>' : '<span class="pastille">à saisir</span>') + '</a>';
+}
+
+function vueManche() {
+  var ms = E.config.manches;
+  if (!ms.length) return '<h2>Parties</h2><p class="discret">Le tournoi n’a pas encore commencé. Les tables s’afficheront ici dès le lancement de la première manche.</p>';
+  var n = mancheVue && mancheVue <= ms.length ? mancheVue : ms.length;
+  var m = ms[n - 1];
+  var faits = m.tables.filter(function (t) { return score(m.n, t.t); }).length;
+  var h = '<div class="rangee" style="justify-content:space-between"><h2 style="margin:0">Manche ' + n + '</h2>';
+  if (ms.length > 1) {
+    h += '<select id="choix-manche" style="width:auto" aria-label="Choisir la manche">';
+    ms.forEach(function (x) { h += '<option value="' + x.n + '"' + (x.n === n ? " selected" : "") + '>Manche ' + x.n + '</option>'; });
+    h += '</select>';
+  }
+  h += '</div><p class="discret" style="margin-top:8px">' + faits + ' score' + (faits > 1 ? "s" : "") + ' saisi' + (faits > 1 ? "s" : "") + ' sur ' + m.tables.length +
+    '. Touchez votre table pour entrer le score.</p>';
+  m.tables.forEach(function (t) { h += lignePartie(m, t, "#table-" + t.t + (n !== ms.length ? "-m" + n : "")); });
+  if (m.exempt != null) h += '<p style="margin-top:12px"><span class="pastille">Exempte</span> ' + nomEq(m.exempt) + ' <span class="discret">(victoire + moyenne des scores de la manche)</span></p>';
+  return h;
+}
+
+function vueTable(t, nForce) {
+  var m = derniere();
+  if (!m) return '<h2>Ma table</h2><p class="discret">Le tournoi n’a pas encore commencé.</p>';
+  if (nForce) m = E.config.manches[nForce - 1] || m;
+  var courante = m.n === E.config.manches.length;
+  if (!t) {
+    var h = '<h2>Manche ' + m.n + ' : quelle est votre table ?</h2><div class="grille">';
+    m.tables.forEach(function (x) { h += '<a class="num ' + (score(m.n, x.t) ? "fait" : "") + '" href="#table-' + x.t + '">' + x.t + '</a>'; });
+    return h + '</div><p class="discret" style="margin-top:12px">Les tables en vert ont déjà leur score.</p>';
+  }
+  var p = m.tables.find(function (x) { return x.t === t; });
+  if (!p) return '<h2>Table ' + t + '</h2><p>Aucune partie sur cette table à la manche ' + m.n + '.</p><a class="bouton second" href="#manche">Voir toutes les parties</a>';
+  var sc = score(m.n, t);
+  var peut = courante || admin;
+  var h2 = '<h2>Manche ' + m.n + ' · Table ' + t + '</h2>';
+  if (sc) h2 += '<p class="message ok">Score enregistré : ' + sc.a + ' – ' + sc.b + '. ' + (peut ? "Une erreur ? Corrigez ci-dessous." : "") + '</p>';
+  if (!peut) return h2 + '<p class="discret">Cette manche est terminée. Pour corriger, voyez l’organisateur.</p>';
+  h2 += '<form class="saisie" id="form-score" data-m="' + m.n + '" data-t="' + t + '">' +
+    '<div class="camp"><label for="sa">' + nomEq(p.a) + '</label><input id="sa" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required value="' + (sc ? sc.a : "") + '" aria-label="Points de la première équipe"></div>' +
+    '<div class="camp"><label for="sb">' + nomEq(p.b) + '</label><input id="sb" inputmode="numeric" pattern="[0-9]*" autocomplete="off" required value="' + (sc ? sc.b : "") + '" aria-label="Points de la deuxième équipe"></div>' +
+    '<button type="submit">' + (sc ? "Corriger le score" : "Valider le score") + '</button></form>' +
+    '<p class="discret" style="margin-top:12px">Entrez le total de points de chaque équipe à la fin de la partie. Les deux équipes vérifient avant de valider.</p>';
+  if (admin && sc) h2 += '<button class="danger petit" id="effacer-score" data-m="' + m.n + '" data-t="' + t + '">Effacer ce score</button>';
+  return h2;
+}
+
+function vueAdmin() {
+  if (!admin) {
+    return '<h2>Espace organisateur</h2><form id="form-code" class="pile" style="max-width:320px"><div><label for="code">Code organisateur</label>' +
+      '<input id="code" type="password" autocomplete="off" required></div><button type="submit">Entrer</button></form>';
+  }
+  var c = E.config, m = derniere();
+  var actives = c.equipes.filter(function (e) { return e.actif !== false; }).length;
+  var manquants = m ? m.tables.filter(function (t) { return !score(m.n, t.t); }).length : 0;
+  var h = '<h2>Espace organisateur</h2>';
+
+  h += '<div class="pile"><p style="margin:0"><strong class="num">' + actives + '</strong> équipe' + (actives > 1 ? "s" : "") + ' en jeu, soit <strong class="num">' + Math.floor(actives / 2) +
+    '</strong> tables' + (actives % 2 ? " et une équipe exempte par manche" : "") + '. ' +
+    (m ? 'Manche ' + m.n + ' en cours : ' + (manquants ? manquants + ' score' + (manquants > 1 ? "s" : "") + ' en attente.' : 'tous les scores sont saisis.') : 'Aucune manche lancée.') + '</p>' +
+    '<div class="rangee"><button id="lancer"' + (actives < 2 ? " disabled" : "") + '>' + (m ? "Lancer la manche " + (m.n + 1) : "Tirer au sort la manche 1") + '</button>' +
+    (m ? '<button class="danger" id="annuler">Annuler la manche ' + m.n + '</button>' : "") + '</div>' +
+    '<p class="discret" style="margin:0">' + (m ? "La manche suivante oppose les équipes voisines au classement (1re contre 2e, 3e contre 4e…), sans revanche." : "La première manche est tirée au sort, les suivantes opposent les mieux classés entre eux.") + '</p></div>';
+
+  h += '<h3>Équipes</h3><form id="form-equipes" class="pile"><div><label for="noms">Ajouter des équipes, une par ligne</label>' +
+    '<textarea id="noms" rows="4" placeholder="Dupont / Martin&#10;Les As de Trèfle"></textarea></div><div><button type="submit" class="second">Ajouter</button></div></form>';
+  if (c.equipes.length) {
+    h += '<div style="margin-top:12px">';
+    c.equipes.forEach(function (e) {
+      var actif = e.actif !== false;
+      h += '<div class="equipe ' + (actif ? "" : "retire") + '"><span class="no num">n° ' + e.id + '</span><span>' + esc(e.nom) + '</span><span class="rangee" style="gap:6px">' +
+        '<button class="petit second" data-renommer="' + e.id + '">Renommer</button>' +
+        '<button class="petit ' + (actif ? "danger" : "second") + '" data-activer="' + e.id + '" data-vers="' + (actif ? 0 : 1) + '">' + (actif ? "Retirer" : "Remettre") + '</button></span></div>';
+    });
+    h += '</div><p class="discret" style="margin-top:8px">Une équipe retirée garde ses points mais ne joue plus les manches suivantes. Une équipe arrivée en retard peut être ajoutée entre deux manches.</p>';
+  }
+
+  var nb = Math.max(Math.floor(actives / 2), m ? m.tables.length : 0);
+  h += '<h3>QR codes des tables</h3><p class="discret">Un QR code par table, valable tout le tournoi : il ouvre toujours la partie en cours sur cette table. Imprimez la planche et posez un code par table.</p>' +
+    '<div class="rangee pas-imprimer" style="margin-bottom:12px"><button id="imprimer" class="second"' + (nb ? "" : " disabled") + '>Imprimer les ' + nb + ' QR codes</button></div><div class="qrs" id="qrs"></div>';
+
+  h += '<h3 class="pas-imprimer">Réglages</h3><form id="form-reglages" class="pile pas-imprimer"><div><label for="nom">Nom du tournoi</label><input id="nom" value="' + esc(c.nom) + '" maxlength="60"></div>' +
+    '<div><label for="mode">Classement</label><select id="mode"><option value="points"' + (c.mode !== "victoires" ? " selected" : "") + '>Total des points, puis victoires</option>' +
+    '<option value="victoires"' + (c.mode === "victoires" ? " selected" : "") + '>Victoires, puis total des points</option></select></div>' +
+    '<div class="rangee"><button type="submit" class="second">Enregistrer</button></div></form>' +
+    '<h3 class="pas-imprimer">Zone sensible</h3><div class="rangee pas-imprimer"><button class="danger" id="raz">Tout effacer et recommencer</button><button class="second" id="sortir">Quitter l’espace organisateur</button></div>';
+  return h;
+}
+
+function dessinerQR() {
+  var zone = $("qrs");
+  if (!zone || typeof qrcode !== "function") return;
+  var m = derniere();
+  var actives = E.config.equipes.filter(function (e) { return e.actif !== false; }).length;
+  var nb = Math.max(Math.floor(actives / 2), m ? m.tables.length : 0);
+  var base = location.origin + location.pathname;
+  var h = "";
+  for (var t = 1; t <= nb; t++) {
+    var q = qrcode(0, "M"); q.addData(base + "#table-" + t); q.make();
+    var n = q.getModuleCount(), d = "";
+    for (var r = 0; r < n; r++) for (var k = 0; k < n; k++) if (q.isDark(r, k)) d += "M" + (k + 2) + " " + (r + 2) + "h1v1h-1z";
+    h += '<div class="qr"><strong class="num">Table ' + t + '</strong><svg viewBox="0 0 ' + (n + 4) + ' ' + (n + 4) + '" role="img" aria-label="QR code de la table ' + t +
+      '"><rect width="100%" height="100%" fill="#fff"/><path d="' + d + '" fill="#000"/></svg><span>Scannez pour entrer votre score</span></div>';
+  }
+  zone.innerHTML = h;
+}
+
+/* ---------- Rendu et navigation ---------- */
+
+function route() {
+  var h = location.hash.replace(/^#/, "") || "classement";
+  var m = h.match(/^table(?:-(\d+))?(?:-m(\d+))?$/);
+  if (m) return { nom: "table", t: m[1] ? Number(m[1]) : 0, n: m[2] ? Number(m[2]) : 0 };
+  if (h === "manche" || h === "admin") return { nom: h };
+  return { nom: "classement" };
+}
+
+function saisieEnCours() {
+  var a = document.activeElement;
+  if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+  // Une valeur tapée mais pas encore envoyée ne doit pas être effacée par le rafraîchissement.
+  return [].some.call(document.querySelectorAll("#vue input, #vue textarea"), function (x) { return x.value !== x.defaultValue; });
+}
+
+function rendre() {
+  var r = route();
+  document.querySelectorAll("#nav a").forEach(function (a) {
+    var cible = a.getAttribute("href").slice(1);
+    a.classList.toggle("ici", cible === r.nom || (cible === "manche" && r.nom === "manche"));
+  });
+  var vue = $("vue");
+  if (!E) { vue.innerHTML = '<p class="message">' + esc(erreurReseau || "Chargement…") + '</p><button id="reessayer" class="second">Réessayer</button>'; return; }
+  $("titre").textContent = E.config.nom;
+  document.title = E.config.nom;
+  var nm = E.config.manches.length;
+  $("sous-titre").textContent = E.config.equipes.length + " équipes · " + (nm ? "manche " + nm + " en cours" : "en attente du tirage");
+  var h = "";
+  if (flash) { h += '<p class="message ' + (flash.ok ? "ok" : "") + '" role="status">' + esc(flash.texte) + '</p>'; flash = null; }
+  if (erreurReseau) h += '<p class="message">Connexion perdue : ' + esc(erreurReseau) + '</p>';
+  if (r.nom === "classement") h += vueClassement();
+  else if (r.nom === "manche") h += vueManche();
+  else if (r.nom === "table") h += vueTable(r.t, r.n);
+  else h += vueAdmin();
+  vue.innerHTML = h;
+  if (r.nom === "admin" && admin) dessinerQR();
+}
+
+window.addEventListener("hashchange", function () { mancheVue = 0; rendre(); window.scrollTo(0, 0); });
+
+document.addEventListener("change", function (ev) {
+  if (ev.target.id === "choix-manche") { mancheVue = Number(ev.target.value); rendre(); }
+});
+
+document.addEventListener("submit", async function (ev) {
+  ev.preventDefault();
+  var f = ev.target;
+  if (f.id === "form-score") {
+    var a = $("sa").value.trim(), b = $("sb").value.trim();
+    if (!/^\d+$/.test(a) || !/^\d+$/.test(b)) { flash = { texte: "Entrez les points des deux équipes, en chiffres." }; return rendre(); }
+    var bouton = f.querySelector("button"); bouton.disabled = true; bouton.textContent = "Envoi…";
+    try {
+      E = await appel("/api/score", { manche: Number(f.dataset.m), table: Number(f.dataset.t), a: Number(a), b: Number(b) });
+      document.activeElement && document.activeElement.blur();
+    } catch (e) { flash = { texte: e.message }; }
+    rendre();
+  } else if (f.id === "form-code") {
+    code = $("code").value.trim();
+    try { await appel("/api/admin", { action: "verifier" }); admin = true; try { localStorage.setItem("belote_code", code); } catch (e) {} await charger(true); }
+    catch (e) { code = ""; flash = { texte: e.message }; rendre(); }
+  } else if (f.id === "form-equipes") {
+    var noms = $("noms").value.split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+    if (!noms.length) return;
+    if (await action({ action: "ajouterEquipes", noms: noms })) { flash = { texte: noms.length + " équipe" + (noms.length > 1 ? "s ajoutées." : " ajoutée."), ok: true }; rendre(); }
+  } else if (f.id === "form-reglages") {
+    if (await action({ action: "reglages", nom: $("nom").value, mode: $("mode").value })) { flash = { texte: "Réglages enregistrés.", ok: true }; rendre(); }
+  }
+});
+
+document.addEventListener("click", async function (ev) {
+  var b = ev.target.closest("button");
+  if (!b) return;
+  if (b.id === "reessayer") return charger(true);
+  if (b.id === "lancer") {
+    var corps = { action: "nouvelleManche" };
+    var m = derniere();
+    if (m && m.tables.some(function (t) { return !score(m.n, t.t); })) {
+      if (!confirm("Des scores de la manche " + m.n + " ne sont pas saisis. Les parties sans score ne compteront pas. Lancer quand même la manche suivante ?")) return;
+      corps.forcer = true;
+    }
+    b.disabled = true;
+    if (await action(corps)) { flash = { texte: "Manche " + derniere().n + " lancée. Annoncez les tables !", ok: true }; location.hash = "#manche"; }
+  } else if (b.id === "annuler") {
+    var d = derniere();
+    if (!confirm("Annuler la manche " + d.n + " ? Ses parties et ses scores seront effacés.")) return;
+    if (await action({ action: "annulerManche" })) { flash = { texte: "Manche " + d.n + " annulée.", ok: true }; rendre(); }
+  } else if (b.dataset.activer) {
+    if (await action({ action: "activer", id: Number(b.dataset.activer), actif: b.dataset.vers === "1" })) rendre();
+  } else if (b.dataset.renommer) {
+    var e = equipe(Number(b.dataset.renommer));
+    var nom = prompt("Nouveau nom de l’équipe n° " + e.id, e.nom);
+    if (nom && nom.trim() && await action({ action: "renommer", id: e.id, nom: nom })) rendre();
+  } else if (b.id === "imprimer") {
+    window.print();
+  } else if (b.id === "raz") {
+    if (prompt("Pour tout effacer (équipes, manches, scores), tapez EFFACER") !== "EFFACER") return;
+    if (await action({ action: "toutEffacer" })) { flash = { texte: "Tournoi remis à zéro.", ok: true }; rendre(); }
+  } else if (b.id === "sortir") {
+    code = ""; admin = false; try { localStorage.removeItem("belote_code"); } catch (e) {}
+    rendre();
+  } else if (b.id === "effacer-score") {
+    if (!confirm("Effacer ce score ?")) return;
+    try { E = await appel("/api/score", { manche: Number(b.dataset.m), table: Number(b.dataset.t), effacer: true }); } catch (e) { flash = { texte: e.message }; }
+    rendre();
+  }
+});
+
+(async function demarrer() {
+  if (code) {
+    try { await appel("/api/admin", { action: "verifier" }); admin = true; } catch (e) { code = ""; }
+  }
+  await charger(admin);
+  // Rafraîchissement : toutes les 15 s, sauf pendant une saisie ou si l'onglet est caché.
+  setInterval(function () { if (!document.hidden && !saisieEnCours()) charger(admin); }, 15000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && !saisieEnCours()) charger(admin); });
+})();
+</script>
+</body>
+</html>
